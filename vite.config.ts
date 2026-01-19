@@ -15,12 +15,8 @@ export default defineConfig(({ mode }) => {
   // Base path dinâmico por ambiente
   // InfinityFree: raiz '/'
   // GitHub Pages: '/E-comerce/' (se o repositório for github.com/usuario/E-comerce)
-  let base = '/';
-  if (isGitHub) {
-    base = '/E-comerce/'; // ⚠️ Corrigido para evitar 404 no GitHub Pages
-  } else if (isInfinityFree) {
-    base = '/'; // raiz no InfinityFree
-  }
+  // Local: raiz '/'
+  const base = isGitHub ? '/E-comerce/' : '/';
 
   console.log('🚀 Vite Config:');
   console.log(`   Mode: ${mode}`);
@@ -31,11 +27,13 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     base, // base path dinâmico
+
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
     },
+
     define: {
       __BASE_PATH__: JSON.stringify(base),
       __PROJECT_ID__: JSON.stringify(env.VITE_PROJECT_ID || ''),
@@ -44,21 +42,24 @@ export default defineConfig(({ mode }) => {
       __DEPLOY_TARGET__: JSON.stringify(deployTarget),
       __IS_PRODUCTION__: JSON.stringify(isProd),
     },
+
     server: {
       port: 3000,
       host: true,
       open: true,
       strictPort: false,
     },
+
     preview: {
       port: 4173,
       host: true,
       strictPort: false,
     },
+
     build: {
       outDir: 'dist',
       emptyOutDir: true,
-      sourcemap: isProd ? false : true,
+      sourcemap: !isProd,
       minify: isProd ? 'terser' : false,
       terserOptions: isProd
         ? {
@@ -88,9 +89,9 @@ export default defineConfig(({ mode }) => {
       assetsInlineLimit: 4096,
       reportCompressedSize: true,
     },
+
     optimizeDeps: {
       include: ['react', 'react-dom', 'react-router-dom', '@supabase/supabase-js'],
-      exclude: [],
     },
   };
 });
