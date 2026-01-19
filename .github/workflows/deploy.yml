@@ -1,0 +1,70 @@
+name: Build and Deploy to GitHub Pages
+
+# Dispara quando houver push na branch main
+on:
+  push:
+    branches:
+      - main
+
+# Permissões necessárias
+permissions:
+  contents: read        # leitura do repositório
+  pages: write          # escrever no GitHub Pages
+  id-token: write       # para autenticação se precisar
+
+# Evita deploys concorrentes
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # 1️⃣ Clonar o repositório
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 3️⃣ Cache do npm para acelerar builds
+      - name: Cache Node modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # 4️⃣ Instalar dependências
+      - name: Install dependencies
+        run: npm ci
+
+      # 5️⃣ Build do projeto
+      - name: Build project
+        # ⚡ Certifique-se que a variável DEPLOY_TARGET está definida
+        env:
+          DEPLOY_TARGET: github
+        run: npm run build
+
+      # 6️⃣ Upload do build para deploy
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: out    # ⚡ Deve bater com o outDir do vite.config.ts
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      # 7️⃣ Deploy para GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+        with:
+          # branch que será publicada pelo Pages (geralmente 'gh-pages')
+          branch: gh-pages
+          token: ${{ secrets.GITHUB_TOKEN }}
